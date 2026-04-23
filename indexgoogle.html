@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚡ ספריית פרומפטים</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f7f6f2;--surface:#ffffff;--surface2:#f0efe9;
+  --text:#1a1a18;--text2:#6b6a64;--text3:#9b9a94;
+  --accent:#1d9e75;--accent-light:#e1f5ee;--accent-dark:#0f6e56;
+  --border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.14);
+  --radius:14px;--radius-sm:8px;
+  --shadow:0 1px 3px rgba(0,0,0,0.06),0 4px 16px rgba(0,0,0,0.05);
+  --font:'Heebo',sans-serif;
+}
+html{font-size:16px}
+body{font-family:var(--font);background:var(--bg);color:var(--text);direction:rtl;min-height:100vh}
+
+/* SYNC STATUS */
+.sync-bar{display:flex;align-items:center;justify-content:center;gap:8px;padding:8px 16px;font-size:12px;color:var(--text3);background:var(--surface);border-bottom:1px solid var(--border)}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#ccc;flex-shrink:0}
+.sync-dot.connected{background:var(--accent)}
+.sync-dot.syncing{background:#f5a623;animation:pulse 1s infinite}
+.sync-dot.error{background:#e74c3c}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* LOGIN SCREEN */
+.login-screen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:32px;text-align:center}
+.login-screen.visible{display:flex}
+.login-logo{font-size:48px;margin-bottom:16px}
+.login-title{font-size:24px;font-weight:700;margin-bottom:8px}
+.login-desc{font-size:15px;color:var(--text2);margin-bottom:32px;line-height:1.6;max-width:380px}
+.btn-google{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--border2);border-radius:var(--radius-sm);padding:12px 24px;font-family:var(--font);font-size:15px;font-weight:500;cursor:pointer;color:var(--text);box-shadow:var(--shadow);transition:all .15s}
+.btn-google:hover{box-shadow:0 2px 8px rgba(0,0,0,0.12);transform:translateY(-1px)}
+.btn-google img{width:20px;height:20px}
+.login-note{font-size:12px;color:var(--text3);margin-top:16px;max-width:320px;line-height:1.5}
+
+/* MAIN APP */
+.app-screen{display:none}
+.app-screen.visible{display:block}
+.app{max-width:960px;margin:0 auto;padding:28px 20px}
+
+/* HEADER */
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;gap:12px;flex-wrap:wrap}
+.logo{font-size:22px;font-weight:700;color:var(--text);letter-spacing:-0.5px;display:flex;align-items:center;gap:8px}
+.logo span{color:var(--accent)}
+.header-actions{display:flex;gap:8px;align-items:center}
+.user-avatar{width:34px;height:34px;border-radius:50%;border:2px solid var(--accent-light);cursor:pointer;object-fit:cover}
+.user-initial{width:34px;height:34px;border-radius:50%;background:var(--accent-light);color:var(--accent-dark);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;cursor:pointer;flex-shrink:0}
+.btn-add{background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);padding:9px 18px;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .15s,transform .1s}
+.btn-add:hover{background:var(--accent-dark);transform:translateY(-1px)}
+.btn-icon{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-sm);width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);font-size:15px;transition:all .15s}
+.btn-icon:hover{background:var(--accent-light);border-color:var(--accent);color:var(--accent)}
+.btn-icon.active{background:var(--accent-light);border-color:var(--accent);color:var(--accent)}
+
+/* SEARCH */
+.search-wrap{position:relative;margin-bottom:20px}
+.search-input{width:100%;padding:11px 16px 11px 44px;border:1px solid var(--border2);border-radius:var(--radius-sm);font-family:var(--font);font-size:15px;background:var(--surface);color:var(--text);outline:none;transition:border .15s,box-shadow .15s}
+.search-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(29,158,117,0.1)}
+.search-input::placeholder{color:var(--text3)}
+.search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:16px;pointer-events:none}
+
+/* STATS */
+.stats{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 16px;font-size:13px;color:var(--text2)}
+.stat b{color:var(--text);font-weight:600}
+
+/* CATS */
+.cats{display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.cats::-webkit-scrollbar{display:none}
+.cat-btn{background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:7px 16px;font-family:var(--font);font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0}
+.cat-btn:hover{border-color:var(--accent);color:var(--accent)}
+.cat-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* SUBCATS */
+.subcats{display:flex;gap:6px;margin-bottom:22px;flex-wrap:wrap}
+.subcat-btn{background:transparent;border:1px solid var(--border);border-radius:20px;padding:5px 13px;font-family:var(--font);font-size:12px;color:var(--text3);cursor:pointer;transition:all .15s}
+.subcat-btn:hover,.subcat-btn.active{background:var(--accent-light);border-color:var(--accent);color:var(--accent-dark);font-weight:500}
+
+/* GRID */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+
+/* CARD */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;cursor:pointer;transition:border-color .15s,transform .12s,box-shadow .15s;display:flex;flex-direction:column;gap:10px}
+.card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow)}
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.card-badges{display:flex;gap:5px;flex-wrap:wrap}
+.badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;background:var(--accent-light);color:var(--accent-dark)}
+.badge-sub{background:var(--surface2);color:var(--text2)}
+.card-title{font-size:15px;font-weight:600;color:var(--text);line-height:1.4}
+.card-desc{font-size:13px;color:var(--text2);line-height:1.6}
+.card-preview{font-size:12px;color:var(--text3);background:var(--surface2);border-radius:var(--radius-sm);padding:10px 12px;line-height:1.6;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;flex:1}
+.card-actions{display:flex;gap:6px;margin-top:2px}
+.card-btn{flex:1;background:transparent;border:1px solid var(--border2);border-radius:var(--radius-sm);padding:7px 10px;font-family:var(--font);font-size:12px;font-weight:500;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:all .15s}
+.card-btn:hover{background:var(--accent-light);border-color:var(--accent);color:var(--accent-dark)}
+.card-btn.copied{background:var(--accent-light);border-color:var(--accent);color:var(--accent-dark)}
+.card-star{background:transparent;border:none;font-size:17px;cursor:pointer;padding:2px 4px;color:#ccc;line-height:1;flex-shrink:0;transition:color .15s,transform .1s}
+.card-star:hover{color:#f5a623;transform:scale(1.2)}
+.card-star.starred{color:#f5a623}
+
+/* EMPTY */
+.empty{text-align:center;padding:80px 20px;grid-column:1/-1}
+.empty-icon{font-size:48px;margin-bottom:16px}
+.empty p{font-size:16px;margin-bottom:8px;color:var(--text2);font-weight:500}
+.empty small{font-size:14px;color:var(--text3)}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:100;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)}
+.modal-bg.open{display:flex}
+.modal{background:var(--surface);border-radius:var(--radius);padding:32px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;direction:rtl;box-shadow:0 8px 40px rgba(0,0,0,0.18)}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.modal-header h3{font-size:19px;font-weight:700}
+.modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--text3);line-height:1;padding:4px}
+.modal-close:hover{color:var(--text)}
+.modal label{font-size:13px;color:var(--text2);display:block;margin-bottom:6px;margin-top:16px;font-weight:500}
+.modal label:first-of-type{margin-top:0}
+.modal input,.modal select,.modal textarea{width:100%;padding:10px 13px;border:1px solid var(--border2);border-radius:var(--radius-sm);font-family:var(--font);font-size:14px;color:var(--text);background:var(--bg);outline:none;transition:border .15s;direction:rtl}
+.modal input:focus,.modal select:focus,.modal textarea:focus{border-color:var(--accent)}
+.modal textarea{resize:vertical;min-height:140px;line-height:1.6}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:24px}
+.btn-cancel{background:transparent;border:1px solid var(--border2);border-radius:var(--radius-sm);padding:9px 18px;font-family:var(--font);font-size:14px;cursor:pointer;color:var(--text2)}
+.btn-cancel:hover{background:var(--surface2)}
+.btn-save{background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);padding:9px 22px;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer}
+.btn-save:hover{background:var(--accent-dark)}
+
+/* VIEW MODAL */
+.view-modal{max-width:640px}
+.prompt-full{background:var(--surface2);border-radius:var(--radius-sm);padding:18px;font-size:14px;line-height:1.8;color:var(--text);white-space:pre-wrap;direction:rtl;margin:14px 0;border:1px solid var(--border)}
+.view-actions{display:flex;gap:8px;flex-wrap:wrap}
+.view-actions .card-btn{flex:0 0 auto;padding:9px 18px;font-size:13px;font-weight:500}
+
+/* TOAST */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(0);background:#1a1a18;color:#fff;padding:11px 22px;border-radius:20px;font-size:14px;font-family:var(--font);z-index:300;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
+
+/* CHAR COUNT */
+.char-count{font-size:11px;color:var(--text3);text-align:left;margin-top:4px}
+
+/* USER MENU */
+.user-menu{position:absolute;top:56px;left:16px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-sm);box-shadow:var(--shadow);z-index:50;min-width:200px;overflow:hidden;display:none}
+.user-menu.open{display:block}
+.user-menu-item{padding:12px 16px;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--text2);transition:background .1s}
+.user-menu-item:hover{background:var(--surface2)}
+.user-menu-divider{height:1px;background:var(--border);margin:4px 0}
+.user-name{padding:14px 16px;font-size:13px;font-weight:600;color:var(--text);border-bottom:1px solid var(--border)}
+
+@media(max-width:600px){
+  .grid{grid-template-columns:1fr}
+  .app{padding:16px 12px}
+  .modal{padding:24px 16px}
+}
+</style>
+</head>
+<body>
+
+<!-- SYNC BAR -->
+<div class="sync-bar" id="sync-bar">
+  <div class="sync-dot" id="sync-dot"></div>
+  <span id="sync-text">לא מחובר</span>
+</div>
+
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="login-screen">
+  <div class="login-logo">⚡</div>
+  <div class="login-title">ספריית פרומפטים</div>
+  <div class="login-desc">כל הפרומפטים שלך במקום אחד, מסונכרנים בין המחשב לטלפון דרך Google Drive שלך.</div>
+  <button class="btn-google" onclick="signIn()">
+    <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+    התחבר עם Google
+  </button>
+  <div class="login-note">הפרומפטים יישמרו בקובץ ב-Google Drive שלך בלבד. לאף אחד אחר אין גישה.</div>
+</div>
+
+<!-- MAIN APP -->
+<div class="app-screen" id="app-screen">
+  <div class="app">
+    <div class="header">
+      <div class="logo">⚡ ספריית <span>פרומפטים</span></div>
+      <div class="header-actions" style="position:relative">
+        <button class="btn-icon" onclick="toggleFavs()" id="fav-btn" title="מועדפים">★</button>
+        <button class="btn-icon" onclick="exportJSON()" title="ייצוא גיבוי">⬇</button>
+        <div class="user-initial" id="user-avatar" onclick="toggleUserMenu()">J</div>
+        <div class="user-menu" id="user-menu">
+          <div class="user-name" id="user-name-display">יונתן</div>
+          <div class="user-menu-item" onclick="exportJSON()">⬇ ייצוא גיבוי JSON</div>
+          <div class="user-menu-divider"></div>
+          <div class="user-menu-item" onclick="signOut()" style="color:#e74c3c">↩ התנתק</div>
+        </div>
+        <button class="btn-add" onclick="openAdd()">+ פרומפט חדש</button>
+      </div>
+    </div>
+
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input class="search-input" type="text" id="search" placeholder="חיפוש פרומפטים..." oninput="render()">
+    </div>
+
+    <div class="stats" id="stats"></div>
+    <div class="cats" id="cats"></div>
+    <div class="subcats" id="subcats"></div>
+    <div class="grid" id="grid"></div>
+  </div>
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="modal-bg" id="modal-add">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">פרומפט חדש</h3>
+      <button class="modal-close" onclick="closeModal('modal-add')">×</button>
+    </div>
+    <label>כותרת *</label>
+    <input id="f-title" type="text" placeholder="שם הפרומפט...">
+    <label>תיאור קצר</label>
+    <input id="f-desc" type="text" placeholder="מה הפרומפט הזה עושה?">
+    <label>קטגוריה *</label>
+    <select id="f-cat" onchange="updateSubcatOptions()"></select>
+    <label>תת-קטגוריה</label>
+    <select id="f-subcat"></select>
+    <label>תוכן הפרומפט *</label>
+    <textarea id="f-body" placeholder="הכנס את הפרומפט כאן..." oninput="updateCharCount()"></textarea>
+    <div class="char-count" id="char-count">0 תווים</div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-add')">ביטול</button>
+      <button class="btn-save" onclick="savePrompt()">שמור</button>
+    </div>
+  </div>
+</div>
+
+<!-- VIEW MODAL -->
+<div class="modal-bg" id="modal-view">
+  <div class="modal view-modal">
+    <div class="modal-header">
+      <div id="view-badges" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+      <button class="modal-close" onclick="closeModal('modal-view')">×</button>
+    </div>
+    <h3 id="view-title" style="font-size:20px;font-weight:700;margin-bottom:6px"></h3>
+    <p id="view-desc" style="font-size:14px;color:var(--text2)"></p>
+    <div class="prompt-full" id="view-body"></div>
+    <div class="view-actions">
+      <button class="card-btn" id="view-copy" onclick="copyFromView()">📋 העתק פרומפט</button>
+      <button class="card-btn" onclick="shareFromView()">🔗 שתף</button>
+      <button class="card-btn" onclick="editFromView()">✏️ ערוך</button>
+      <button class="card-btn" style="color:#c0392b" onclick="deleteFromView()">🗑️ מחק</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://apis.google.com/js/api.js"></script>
+<script>
+const CLIENT_ID='538398968465-k4quhs409c78ea10m4fc1kh4isdi0mqp.apps.googleusercontent.com';
+const SCOPES='https://www.googleapis.com/auth/drive.appdata';
+const FILE_NAME='prompt_library_data.json';
+
+const DEFAULT_CATS={
+  'כתיבה ותוכן':['שיווק','בלוג ומאמרים','מדיה חברתית','אימייל'],
+  'פיתוח וטק':['קוד ופיתוח','דיבאג','ארכיטקטורה','דוקומנטציה'],
+  'וידאו ועריכה':['DaVinci Resolve','תסריט','תיאור סצנה','פוסט-פרודקשן'],
+  'רחפן ו-MTB':['תכנון טיסה','עריכת צילום','שאלות ציוד','אחרי הרידה'],
+  'עבודה ותפעול':['ניהול','NVIDIA','תיאורי תפקיד','אנליזה'],
+  'כללי':['מידע כללי','רעיונות','שונות']
+};
+
+const DEFAULT_PROMPTS=[
+  {id:'p1',title:'תיאור סצנת MTB סינמטי',desc:'יוצר תיאור ויזואלי מרהיב לסצנת רכיבה',cat:'רחפן ו-MTB',subcat:'תיאור סצנה',body:'תאר סצנת רכיבת הרים סינמטית ב-[מיקום]. הרוכב מגיע מ[כיוון], קצב העריכה עולה עם המוזיקה. כלול: תאורה, זווית המצלמה, תנועת הרחפן, ואנרגיית הסצנה. הסגנון: קולנועי-מלחיץ.',starred:true,created:Date.now()-86400000*5},
+  {id:'p2',title:'Color Grade Teal & Orange ב-DaVinci',desc:'מדריך גריידינג צינמטי ל-DaVinci Resolve',cat:'וידאו ועריכה',subcat:'DaVinci Resolve',body:'אני עובד ב-DaVinci Resolve עם קליפ [סוג מצלמה]. תן לי הוראות שלב-אחר-שלב לבניית Teal & Orange grade:\n1) Lift/Gamma/Gain\n2) Color wheels\n3) Curves\n4) Qualifier לעור\n\nתוצאה: מראה קולנועי מקצועי.',starred:true,created:Date.now()-86400000*4},
+  {id:'p3',title:'Speed Ramp לקטע אקשן',desc:'יצירת ספיד רמפ סינמטי על קצב',cat:'וידאו ועריכה',subcat:'DaVinci Resolve',body:'תעזור לי לבנות speed ramp ב-DaVinci Resolve לקטע MTB. הקליפ: [תיאור]. רצוי: האטה דרמטית ב-[שניה X], האצה לפני ה-drop. תן הוראות מדויקות כולל Optical Flow ו-Retime Curve.',starred:false,created:Date.now()-86400000*3},
+  {id:'p4',title:'פוסט אינסטגרם לסרטון MTB',desc:'כיתוב שיווקי לפוסט ריידינג ברשתות',cat:'כתיבה ותוכן',subcat:'מדיה חברתית',body:'כתוב כיתוב לפוסט אינסטגרם לסרטון MTB שצולם ב[מיקום]. כלול: שורה פותחת חזקה, 2-3 משפטים על החוויה, CTA, ו-10 האשטגים רלוונטיים. טון: אותנטי, נרגש, לא שיווקי מדי.',starred:false,created:Date.now()-86400000*2},
+  {id:'p5',title:'פרומפט לתמונת AI מרחפן',desc:'יצירת פרומפט לתמונה קולנועית מרחפן',cat:'רחפן ו-MTB',subcat:'תכנון טיסה',body:'צור פרומפט ל-Midjourney/Copilot לתמונת אוויר של [מיקום] בסגנון cinematic drone photography.\n\nכלול:\n- שעת הצילום (golden hour)\n- גובה הרחפן\n- זווית\n- f-stop\n- תאורה טבעית\n\n--ar 16:9 --v 6',starred:true,created:Date.now()-86400000},
+  {id:'p6',title:'סיכום ישיבה + Action Items',desc:'הפיכת הערות ישיבה לסיכום מובנה',cat:'עבודה ותפעול',subcat:'ניהול',body:'להלן הערות מישיבה:\n[הערות]\n\nצור:\n1) סיכום מנהלים ב-3 משפטים\n2) החלטות עיקריות\n3) Action Items עם שם אחראי ותאריך יעד\n4) נושאים לישיבה הבאה\n\nפורמט: מסמך מוכן לשליחה.',starred:false,created:Date.now()}
+];
+
+let prompts=[];
+let cats={};
+let activeCat='הכל';
+let activeSubcat='הכל';
+let showFavs=false;
+let editingId=null;
+let viewingId=null;
+let tokenClient=null;
+let accessToken=null;
+let driveFileId=null;
+let isSaving=false;
+
+// ---- GOOGLE AUTH ----
+function initGoogleAuth(){
+  tokenClient=google.accounts.oauth2.initTokenClient({
+    client_id:CLIENT_ID,
+    scope:SCOPES,
+    callback:(response)=>{
+      if(response.error){setSyncStatus('error','שגיאת התחברות');return;}
+      accessToken=response.access_token;
+      localStorage.setItem('pl_token',accessToken);
+      onSignedIn();
+    }
+  });
+  const saved=localStorage.getItem('pl_token');
+  if(saved){
+    accessToken=saved;
+    onSignedIn();
+  }else{
+    showLoginScreen();
+  }
+}
+
+function signIn(){
+  tokenClient.requestAccessToken({prompt:''});
+}
+
+function signOut(){
+  google.accounts.oauth2.revoke(accessToken,()=>{});
+  accessToken=null;
+  localStorage.removeItem('pl_token');
+  driveFileId=null;
+  closeUserMenu();
+  showLoginScreen();
+  showToast('התנתקת בהצלחה');
+}
+
+function showLoginScreen(){
+  document.getElementById('login-screen').classList.add('visible');
+  document.getElementById('app-screen').classList.remove('visible');
+}
+
+function showAppScreen(){
+  document.getElementById('login-screen').classList.remove('visible');
+  document.getElementById('app-screen').classList.add('visible');
+}
+
+async function onSignedIn(){
+  setSyncStatus('syncing','מתחבר לענן...');
+  showAppScreen();
+  try{
+    await loadFromDrive();
+    setSyncStatus('connected','מסונכרן עם Google Drive');
+  }catch(e){
+    if(e.message==='401'){
+      accessToken=null;
+      localStorage.removeItem('pl_token');
+      showLoginScreen();
+    }else{
+      prompts=[...DEFAULT_PROMPTS];
+      cats={...DEFAULT_CATS};
+      setSyncStatus('error','שגיאה בטעינה — עובד מקומית');
+      render();
+    }
+  }
+}
+
+// ---- DRIVE API ----
+async function driveRequest(method,url,body){
+  const res=await fetch(url,{
+    method,
+    headers:{
+      'Authorization':'Bearer '+accessToken,
+      ...(body?{'Content-Type':'application/json'}:{})
+    },
+    ...(body?{body:JSON.stringify(body)}:{})
+  });
+  if(res.status===401)throw new Error('401');
+  return res;
+}
+
+async function findFile(){
+  const res=await fetch(
+    'https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name%3D%22'+FILE_NAME+'%22&fields=files(id)',
+    {headers:{'Authorization':'Bearer '+accessToken}}
+  );
+  if(res.status===401)throw new Error('401');
+  const data=await res.json();
+  return data.files&&data.files.length?data.files[0].id:null;
+}
+
+async function loadFromDrive(){
+  driveFileId=await findFile();
+  if(!driveFileId){
+    prompts=[...DEFAULT_PROMPTS];
+    cats={...DEFAULT_CATS};
+    await saveToDrive();
+  }else{
+    const res=await fetch(
+      'https://www.googleapis.com/drive/v3/files/'+driveFileId+'?alt=media',
+      {headers:{'Authorization':'Bearer '+accessToken}}
+    );
+    if(res.status===401)throw new Error('401');
+    const data=await res.json();
+    prompts=data.prompts||[...DEFAULT_PROMPTS];
+    cats=data.cats||{...DEFAULT_CATS};
+  }
+  render();
+}
+
+async function saveToDrive(){
+  if(isSaving)return;
+  isSaving=true;
+  setSyncStatus('syncing','שומר...');
+  try{
+    const content=JSON.stringify({prompts,cats});
+    const blob=new Blob([content],{type:'application/json'});
+    const metadata={name:FILE_NAME,parents:driveFileId?undefined:['appDataFolder']};
+    const form=new FormData();
+    form.append('metadata',new Blob([JSON.stringify(metadata)],{type:'application/json'}));
+    form.append('file',blob);
+    const url=driveFileId
+      ?'https://www.googleapis.com/upload/drive/v3/files/'+driveFileId+'?uploadType=multipart'
+      :'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+    const method=driveFileId?'PATCH':'POST';
+    const res=await fetch(url,{method,headers:{'Authorization':'Bearer '+accessToken},body:form});
+    if(res.status===401)throw new Error('401');
+    const data=await res.json();
+    if(!driveFileId)driveFileId=data.id;
+    setSyncStatus('connected','מסונכרן ✓');
+  }catch(e){
+    setSyncStatus('error','שגיאה בשמירה');
+  }finally{
+    isSaving=false;
+  }
+}
+
+function setSyncStatus(state,text){
+  const dot=document.getElementById('sync-dot');
+  const txt=document.getElementById('sync-text');
+  dot.className='sync-dot '+state;
+  txt.textContent=text;
+}
+
+// ---- UI ----
+function getFiltered(){
+  const q=document.getElementById('search').value.trim().toLowerCase();
+  return prompts.filter(p=>{
+    if(activeCat!=='הכל'&&p.cat!==activeCat)return false;
+    if(activeSubcat!=='הכל'&&p.subcat!==activeSubcat)return false;
+    if(showFavs&&!p.starred)return false;
+    if(q&&!(p.title+' '+(p.desc||'')+' '+p.body).toLowerCase().includes(q))return false;
+    return true;
+  });
+}
+
+function render(){
+  renderStats();renderCats();renderSubcats();renderGrid();
+}
+
+function renderStats(){
+  const el=document.getElementById('stats');
+  const total=prompts.length,starred=prompts.filter(p=>p.starred).length,catCount=Object.keys(cats).length;
+  el.innerHTML=`<div class="stat"><b>${total}</b> פרומפטים</div><div class="stat"><b>${starred}</b> מועדפים</div><div class="stat"><b>${catCount}</b> קטגוריות</div>`;
+}
+
+function renderCats(){
+  const el=document.getElementById('cats');
+  el.innerHTML=['הכל',...Object.keys(cats)].map(c=>`<button class="cat-btn${activeCat===c?' active':''}" onclick="setCat('${escAttr(c)}')">${escHtml(c)}</button>`).join('');
+}
+
+function renderSubcats(){
+  const el=document.getElementById('subcats');
+  if(activeCat==='הכל'){el.innerHTML='';return;}
+  el.innerHTML=['הכל',...(cats[activeCat]||[])].map(s=>`<button class="subcat-btn${activeSubcat===s?' active':''}" onclick="setSubcat('${escAttr(s)}')">${escHtml(s)}</button>`).join('');
+}
+
+function renderGrid(){
+  const el=document.getElementById('grid');
+  const filtered=getFiltered();
+  if(!filtered.length){
+    el.innerHTML=`<div class="empty"><div class="empty-icon">🔍</div><p>לא נמצאו פרומפטים</p><small>נסה לשנות את החיפוש או הקטגוריה</small></div>`;
+    return;
+  }
+  el.innerHTML=filtered.map(p=>`
+    <div class="card" onclick="viewPrompt('${p.id}')">
+      <div class="card-top">
+        <div class="card-badges"><span class="badge">${escHtml(p.cat)}</span>${p.subcat?`<span class="badge badge-sub">${escHtml(p.subcat)}</span>`:''}</div>
+        <button class="card-star${p.starred?' starred':''}" onclick="event.stopPropagation();toggleStar('${p.id}')">${p.starred?'★':'☆'}</button>
+      </div>
+      <div class="card-title">${escHtml(p.title)}</div>
+      ${p.desc?`<div class="card-desc">${escHtml(p.desc)}</div>`:''}
+      <div class="card-preview">${escHtml(p.body)}</div>
+      <div class="card-actions">
+        <button class="card-btn" id="copy-${p.id}" onclick="event.stopPropagation();copyPrompt('${p.id}')">📋 העתק</button>
+        <button class="card-btn" onclick="event.stopPropagation();sharePrompt('${p.id}')">🔗 שתף</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function escAttr(s){return String(s).replace(/'/g,"\\'").replace(/"/g,'&quot;')}
+
+function setCat(c){activeCat=c;activeSubcat='הכל';render()}
+function setSubcat(s){activeSubcat=s;render()}
+
+function toggleFavs(){
+  showFavs=!showFavs;
+  document.getElementById('fav-btn').classList.toggle('active',showFavs);
+  render();
+}
+
+function toggleStar(id){
+  const p=prompts.find(x=>x.id===id);
+  if(p){p.starred=!p.starred;saveToDrive();render();showToast(p.starred?'נוסף למועדפים ★':'הוסר ממועדפים');}
+}
+
+function copyPrompt(id){
+  const p=prompts.find(x=>x.id===id);
+  if(!p)return;
+  navigator.clipboard.writeText(p.body).then(()=>{
+    const btn=document.getElementById('copy-'+id);
+    if(btn){btn.innerHTML='✓ הועתק';btn.classList.add('copied');setTimeout(()=>{btn.innerHTML='📋 העתק';btn.classList.remove('copied')},2000);}
+    showToast('הפרומפט הועתק ✓');
+  }).catch(()=>showToast('לא הצליח להעתיק'));
+}
+
+function sharePrompt(id){
+  const p=prompts.find(x=>x.id===id);
+  if(!p)return;
+  const text=`📌 ${p.title}\n\n${p.body}`;
+  if(navigator.share)navigator.share({title:p.title,text}).catch(()=>{});
+  else navigator.clipboard.writeText(text).then(()=>showToast('הועתק לשיתוף ✓'));
+}
+
+function viewPrompt(id){
+  const p=prompts.find(x=>x.id===id);
+  if(!p)return;
+  viewingId=id;
+  document.getElementById('view-title').textContent=p.title;
+  document.getElementById('view-desc').textContent=p.desc||'';
+  document.getElementById('view-body').textContent=p.body;
+  document.getElementById('view-badges').innerHTML=`<span class="badge">${escHtml(p.cat)}</span>${p.subcat?`<span class="badge badge-sub">${escHtml(p.subcat)}</span>`:''}`;
+  document.getElementById('view-copy').innerHTML='📋 העתק פרומפט';
+  openModal('modal-view');
+}
+
+function copyFromView(){
+  const p=prompts.find(x=>x.id===viewingId);
+  if(!p)return;
+  navigator.clipboard.writeText(p.body).then(()=>{
+    document.getElementById('view-copy').innerHTML='✓ הועתק!';
+    showToast('הפרומפט הועתק ✓');
+    setTimeout(()=>document.getElementById('view-copy').innerHTML='📋 העתק פרומפט',2000);
+  });
+}
+
+function shareFromView(){sharePrompt(viewingId)}
+function editFromView(){closeModal('modal-view');setTimeout(()=>openEdit(viewingId),120);}
+function deleteFromView(){
+  if(!confirm('למחוק את הפרומפט הזה?'))return;
+  prompts=prompts.filter(x=>x.id!==viewingId);
+  saveToDrive();render();closeModal('modal-view');showToast('הפרומפט נמחק');
+}
+
+function openAdd(){
+  editingId=null;
+  document.getElementById('modal-title').textContent='פרומפט חדש';
+  document.getElementById('f-title').value='';
+  document.getElementById('f-desc').value='';
+  document.getElementById('f-body').value='';
+  document.getElementById('char-count').textContent='0 תווים';
+  populateCatSelect();
+  openModal('modal-add');
+  setTimeout(()=>document.getElementById('f-title').focus(),100);
+}
+
+function openEdit(id){
+  const p=prompts.find(x=>x.id===id);
+  if(!p)return;
+  editingId=id;
+  document.getElementById('modal-title').textContent='עריכת פרומפט';
+  document.getElementById('f-title').value=p.title;
+  document.getElementById('f-desc').value=p.desc||'';
+  document.getElementById('f-body').value=p.body;
+  document.getElementById('char-count').textContent=p.body.length+' תווים';
+  populateCatSelect(p.cat,p.subcat);
+  openModal('modal-add');
+}
+
+function populateCatSelect(selCat,selSub){
+  const cs=document.getElementById('f-cat');
+  cs.innerHTML=Object.keys(cats).map(c=>`<option value="${escHtml(c)}"${c===selCat?' selected':''}>${escHtml(c)}</option>`).join('');
+  updateSubcatOptions(selSub);
+}
+
+function updateSubcatOptions(selSub){
+  const cat=document.getElementById('f-cat').value;
+  const ss=document.getElementById('f-subcat');
+  const subs=cats[cat]||[];
+  ss.innerHTML=['(ללא)',...subs].map(s=>`<option value="${s==='(ללא)'?'':s}"${(s===selSub||(s==='(ללא)'&&!selSub))?' selected':''}>${s}</option>`).join('');
+}
+
+function updateCharCount(){
+  document.getElementById('char-count').textContent=document.getElementById('f-body').value.length+' תווים';
+}
+
+function savePrompt(){
+  const title=document.getElementById('f-title').value.trim();
+  const body=document.getElementById('f-body').value.trim();
+  if(!title){showToast('נא להזין כותרת');return;}
+  if(!body){showToast('נא להזין תוכן');return;}
+  const cat=document.getElementById('f-cat').value;
+  const subcat=document.getElementById('f-subcat').value;
+  const desc=document.getElementById('f-desc').value.trim();
+  if(editingId){
+    const p=prompts.find(x=>x.id===editingId);
+    if(p)Object.assign(p,{title,desc,cat,subcat,body});
+    showToast('הפרומפט עודכן ✓');
+  }else{
+    prompts.unshift({id:'p'+Date.now(),title,desc,cat,subcat,body,starred:false,created:Date.now()});
+    showToast('הפרומפט נוסף ✓');
+  }
+  saveToDrive();render();closeModal('modal-add');
+}
+
+function exportJSON(){
+  const data=JSON.stringify({prompts,cats},null,2);
+  const blob=new Blob([data],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='prompt_library_backup_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+  showToast('גיבוי יוצא ✓');
+  closeUserMenu();
+}
+
+function toggleUserMenu(){
+  document.getElementById('user-menu').classList.toggle('open');
+}
+function closeUserMenu(){
+  document.getElementById('user-menu').classList.remove('open');
+}
+
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+
+document.querySelectorAll('.modal-bg').forEach(m=>{
+  m.addEventListener('click',e=>{if(e.target===m)closeModal(m.id)});
+});
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#user-avatar')&&!e.target.closest('#user-menu'))closeUserMenu();
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    document.querySelectorAll('.modal-bg.open').forEach(m=>closeModal(m.id));
+    closeUserMenu();
+  }
+});
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+window.onload=()=>{
+  gapi.load('',()=>{
+    google.accounts.id.initialize({client_id:CLIENT_ID});
+    initGoogleAuth();
+  });
+};
+</script>
+</body>
+</html>
